@@ -1,4 +1,6 @@
-export const metadata = {import './globals.css'
+import './globals.css'
+
+export const metadata = {
   title: 'Fake Real Detect',
   description: 'AI thlalak REAL nge FAKE check na'
 }
