@@ -1,21 +1,35 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
-export async function POST(req: NextRequest) {
-  const data = await req.formData()
-  const image: File | null = data.get('image') as unknown as File
-  if (!image) return Response.json({ error: 'No image' }, { status: 400 })
+export async function POST(request: NextRequest) {
+  const data = await request.formData()
+  const file = data.get('file') as File
+  
+  if (!file) {
+    return NextResponse.json({ error: 'File a awm lo' }, { status: 400 })
+  }
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-  const bytes = await image.arrayBuffer()
-  const buffer = Buffer.from(bytes)
-  
-  const result = await model.generateContent([
-    'You are a forensic expert. Is this image AI generated or real? Return ONLY JSON: {verdict: REAL or FAKE, confidence: 0-100, reasons: [5 short reasons]}. Check fingers, eyes, text, skin, lighting.',
-    { inlineData: { data: buffer.toString('base64'), mimeType: image.type } }
-  ])
-  
-  const text = result.response.text().replace(/```json|```/g, '')
-  return Response.json(JSON.parse(text))
-    }
+  const formData = new FormData()
+  formData.append('media', file)
+  formData.append('models', 'genai')
+  formData.append('api_user', 'YOUR_API_USER')
+  formData.append('api_secret', 'YOUR_API_SECRET')
+
+  try {
+    const res = await fetch('https://api.sightengine.com/1.0/check.json', {
+      method: 'POST',
+      body: formData
+    })
+    const result = await res.json()
+    
+    const aiScore = result.type?.ai_generated || 0
+    const isFake = aiScore > 0.5
+
+    return NextResponse.json({
+      isFake: isFake,
+      confidence: Math.round(aiScore * 100),
+      message: isFake ? 'FAKE ni maithei - AI siam a ang' : 'REAL a ang ber'
+    })
+  } catch (error) {
+    return NextResponse.json({ error: 'API error' }, { status: 500 })
+  }
+}
