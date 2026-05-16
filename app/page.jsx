@@ -26,7 +26,7 @@ export default function Home() {
         <div className={`p-8 rounded-xl text-center ${result.verdict === 'REAL'? 'bg-green-600' : 'bg-red-600'}`}>
           <h2 className="text-5xl font-bold">{result.verdict}</h2>
           <p className="text-xl">{result.confidence}% Confidence</p>
-          <ul className="mt-4 text-left">{result.reasons?.map((r: string, i: number) => <li key={i}>✓ {r}</li>)}</ul>
+          <ul className="mt-4 text-left">{result.reasons?.map((ri) => <li key={i}>✓ {r}</li>)}</ul>
         </div>
       )}
     </main>
