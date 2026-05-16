@@ -2,10 +2,10 @@
 import { useState } from 'react'
 
 export default function Home() {
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
 
-  async function checkImage(e: any) {
+  async function checkImage(e) {
     const file = e.target.files[0]
     if (!file) return
     setLoading(true)
