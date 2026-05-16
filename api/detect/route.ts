@@ -11,8 +11,8 @@ export async function POST(request: NextRequest) {
   const formData = new FormData()
   formData.append('media', file)
   formData.append('models', 'genai')
-  formData.append('api_user', 'YOUR_API_USER')
-  formData.append('api_secret', 'YOUR_API_SECRET')
+  formData.append('api_user', '16787724')     
+formData.append('api_secret', 'YmLZdWtMTfkQVM9qwVmxhatN848532MB')
 
   try {
     const res = await fetch('https://api.sightengine.com/1.0/check.json', {
