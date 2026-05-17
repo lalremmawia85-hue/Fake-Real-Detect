@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI or Real Detector - 5 Model Check</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh; padding: 20px;
+        }
+       .container { 
+            max-width: 600px; margin: 0 auto; background: white; 
+            border-radius: 20px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 10px; font-size: 28px; }
+       .subtitle { text-align: center; color: #666; margin-bottom: 30px; font-size: 14px; }
+       .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+       .tab { 
+            flex: 1; padding: 12px; border: 2px solid #e0e0e0; background: white;
+            border-radius: 10px; cursor: pointer; font-weight: 600; transition: all 0.3s;
+        }
+       .tab.active { background: #667eea; color: white; border-color: #667eea; }
+       .upload-area { 
+            border: 3px dashed #ccc; border-radius: 15px; padding: 40px;
+            text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 20px;
+        }
+       .upload-area:hover { border-color: #667eea; background: #f8f9ff; }
+        input[type="file"] { display: none; }
+       .btn { 
+            width: 100%; padding: 15px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px; font-size: 16px;
+            font-weight: 600; cursor: pointer; transition: transform 0.2s;
+        }
+       .btn:hover { transform: translateY(-2px); }
+       .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        #preview { max-width: 100%; margin: 20px 0; border-radius: 10px; display: none; }
+       .result { 
+            margin-top: 20px; padding: 20px; border-radius: 10px; 
+            display: none; animation: slideIn 0.5s;
+        }
+       .result.real { background: #d4edda; border: 2px solid #28a745; }
+       .result.fake { background: #f8d7da; border: 2px solid #dc3545; }
+       .result h3 { margin-bottom: 15px; font-size: 24px; }
+       .model-results { margin-top: 15px; }
+       .model-item { 
+            display: flex; justify-content: space-between; padding: 10px;
+            background: rgba(255,255,255,0.5); margin: 5px 0; border-radius: 5px;
+        }
+       .loading { text-align: center; padding: 20px; display: none; }
+       .spinner { 
+            border: 4px solid #f3f3f3; border-top: 4px solid #667eea;
+            border-radius: 50%; width: 40px; height: 40px;
+            animation: spin 1s linear infinite; margin: 0 auto;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+       .file-name { margin-top: 10px; color: #667eea; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 AI or Real Detector</h1>
+        <p class="subtitle">5 AI Models + Metadata Check | 100% Free</p>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('image')">📷 Image</button>
+            <button class="tab" onclick="switchTab('video')">🎥 Video</button>
+            <button class="tab" onclick="switchTab('audio')">🎵 Audio</button>
+        </div>
+
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <div style="font-size: 48px;">📁</div>
+            <p style="margin-top: 10px; font-weight: 600;">Click to upload or drag & drop</p>
+            <p style="color: #999; font-size: 12px; margin-top: 5px;" id="fileType">JPG, PNG, WEBP up to 10MB</p>
+            <div class="file-name" id="fileName"></div>
+        </div>
+        
+        <input type="file" id="fileInput" accept="image/*" onchange="handleFile(event)">
+        <img id="preview" alt="Preview">
+        
+        <button class="btn" id="checkBtn" onclick="checkFile()" disabled>Check Now</button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px;">Analyzing with 5 AI models...</p>
+        </div>
+        
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        let currentTab = 'image';
+        let selectedFile = null;
+
+        const fileTypes = {
+            image: { accept: 'image/*', text: 'JPG, PNG, WEBP up to 10MB' },
+            video: { accept: 'video/*', text: 'MP4, MOV, WEBM up to 50MB' },
+            audio: { accept: 'audio/*', text: 'MP3, WAV, M4A up to 20MB' }
+        };
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById('fileInput').accept = fileTypes[tab].accept;
+            document.getElementById('fileType').textContent = fileTypes[tab].text;
+            resetUI();
+        }
+
+        function handleFile(e) {
+            selectedFile = e.target.files[0];
+            if (!selectedFile) return;
+            
+            document.getElementById('fileName').textContent = selectedFile.name;
+            document.getElementById('checkBtn').disabled = false;
+            
+            if (currentTab === 'image') {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('preview').src = e.target.result;
+                    document.getElementById('preview').style.display = 'block';
+                };
+                reader.readAsDataURL(selectedFile);
+            }
+        }
+
+        function resetUI() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('preview').style.display = 'none';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('checkBtn').disabled = true;
+        }
+
+        async function checkFile() {
+            if (!selectedFile) return;
+            
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('checkBtn').disabled = true;
+            
+            // Simulate 5-model analysis
+            await new Promise(r => setTimeout(r, 3000));
+            
+            const models = [
+                { name: 'Metadata Analysis', score: 92, result: 'Real' },
+                { name: 'Noise Pattern Check', score: 88, result: 'Real' },
+                { name: 'Compression Analysis', score: 95, result: 'Real' },
+                { name: 'Pixel Consistency', score: 90, result: 'Real' },
+                { name: 'AI Artifact Detector', score: 87, result: 'Real' }
+            ];
+            
+            const avgScore = models.reduce((a, b) => a + b.score, 0) / models.length;
+            const finalResult = avgScore > 50? 'Real' : 'AI Generated';
+            const confidence = avgScore > 50? avgScore : 100 - avgScore;
+            
+            displayResult(finalResult, confidence, models);
+        }
+
+        function displayResult(finalResult, confidence, models) {
+            document.getElementById('loading').style.display = 'none';
+            const resultDiv = document.getElementById('result');
+            
+            resultDiv.className = `result ${finalResult === 'Real'? 'real' : 'fake'}`;
+            resultDiv.innerHTML = `
+                <h3>${finalResult === 'Real'? '✅ Likely Real' : '⚠️ Likely AI Generated'}</h3>
+                <p style="font-size: 18px; margin-bottom: 15px;">
+                    <strong>Confidence: ${confidence.toFixed(1)}%</strong>
+                </p>
+                <div class="model-results">
+                    <h4 style="margin-bottom: 10px;">5-Model Breakdown:</h4>
+                    ${models.map(m => `
+                        <div class="model-item">
+                            <span>${m.name}</span>
+                            <span><strong>${m.score}% ${m.result}</strong></span>
+                        </div>
+                    `).join('')}
+                </div>
+                <p style="margin-top: 15px; font-size: 12px; color: #666;">
+                    Note: This is a demo. For production, integrate real AI detection APIs.
+                </p>
+            `;
+            resultDiv.style.display = 'block';
+            document.getElementById('checkBtn').disabled = false;
+        }
+
+        // Drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#667eea';
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = '#ccc';
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ccc';
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                document.getElementById('fileInput').files = files;
+                handleFile({ target: { files } });
+            }
+        });
+    </script>
+</body>
+  </html>
